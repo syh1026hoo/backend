@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">ETF 랭킹</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .section-title {
+            color: #1e293b;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #2563eb;
+        }
+        .price-up { color: #dc2626; font-weight: bold; }
+        .price-down { color: #2563eb; font-weight: bold; }
+        .price-neutral { color: #6b7280; font-weight: bold; }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .btn-group .btn {
+            border-radius: 8px;
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line me-2"></i>
+                ETF 정보 플랫폼
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home me-1"></i>
+                            대시보드
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/search">
+                            <i class="fas fa-search me-1"></i>
+                            검색
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/themes">
+                            <i class="fas fa-tags me-1"></i>
+                            테마별
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/rankings">
+                            <i class="fas fa-trophy me-1"></i>
+                            랭킹
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/watchlist" id="watchlistNav" style="display: none;">
+                            <i class="fas fa-heart me-1"></i>
+                            관심종목
+                        </a>
+                    </li>
+                </ul>
+                <form class="d-flex me-3" action="/search" method="GET">
+                    <input class="form-control me-2" type="search" name="keyword" placeholder="ETF 검색..." 
+                           th:value="${keyword}" style="width: 200px;">
+                    <button class="btn btn-outline-light" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+                <!-- 인증 관련 버튼들 -->
+                <div class="navbar-nav" id="authButtons">
+                    <a class="nav-link btn btn-outline-light btn-sm me-2" href="/login">
+                        <i class="fas fa-sign-in-alt me-1"></i>로그인
+                    </a>
+                    <a class="nav-link btn btn-primary btn-sm" href="/login">
+                        <i class="fas fa-user-plus me-1"></i>회원가입
+                    </a>
+                </div>
+                <!-- 로그인 후 사용자 메뉴 -->
+                <div class="navbar-nav" id="userMenu" style="display: none;">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-light" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i><span id="userDisplayName">사용자</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/watchlist">
+                                <i class="fas fa-heart me-2"></i>관심종목
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt me-2"></i>로그아웃
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mt-4">
+        <!-- 페이지 헤더 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="section-title">
+                    <i class="fas fa-trophy me-2"></i>
+                    <span th:text="${title}">ETF 랭킹</span>
+                </h1>
+                <p class="text-muted">다양한 기준으로 정렬된 ETF 순위를 확인하세요</p>
+            </div>
+        </div>
+
+        <!-- 랭킹 탭 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="btn-group w-100" role="group">
+                            <a href="/rankings?type=gainers" 
+                               class="btn" 
+                               th:classappend="${currentType == 'gainers'} ? 'btn-danger' : 'btn-outline-danger'">
+                                <i class="fas fa-arrow-up me-2"></i>
+                                등락률 상위
+                            </a>
+                            <a href="/rankings?type=losers" 
+                               class="btn" 
+                               th:classappend="${currentType == 'losers'} ? 'btn-primary' : 'btn-outline-primary'">
+                                <i class="fas fa-arrow-down me-2"></i>
+                                등락률 하위
+                            </a>
+                            <a href="/rankings?type=volume" 
+                               class="btn" 
+                               th:classappend="${currentType == 'volume'} ? 'btn-success' : 'btn-outline-success'">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                거래량 상위
+                            </a>
+                            <a href="/rankings?type=amount" 
+                               class="btn" 
+                               th:classappend="${currentType == 'amount'} ? 'btn-warning' : 'btn-outline-warning'">
+                                <i class="fas fa-coins me-2"></i>
+                                거래대금 상위
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 랭킹 리스트 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0" th:text="${title}">랭킹</h5>
+                        <span class="badge bg-primary" th:text="${etfs.size()} + '개'">20개</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${etfs != null and !etfs.empty}" class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="60">순위</th>
+                                        <th>ETF명</th>
+                                        <th width="100">종목코드</th>
+                                        <th width="120" class="text-end">현재가</th>
+                                        <th width="100" class="text-end" th:if="${currentType == 'gainers' or currentType == 'losers'}">등락률</th>
+                                        <th width="120" class="text-end" th:if="${currentType == 'volume'}">거래량</th>
+                                        <th width="140" class="text-end" th:if="${currentType == 'amount'}">거래대금</th>
+                                        <th width="120" class="text-end">NAV</th>
+                                        <th width="100">카테고리</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="etf, iterStat : ${etfs}" class="align-middle">
+                                        <td>
+                                            <span class="badge fs-6"
+                                                  th:classappend="${iterStat.index < 3} ? 'bg-warning' : 'bg-secondary'"
+                                                  th:text="${iterStat.count}">1</span>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <a th:href="@{/etf/{isinCd}(isinCd=${etf.isinCd})}" 
+                                                   class="text-decoration-none fw-bold" 
+                                                   th:text="${etf.itmsNm}">ETF명</a>
+                                                <div th:if="${etf.baseIndexName}" class="small text-muted">
+                                                    <span th:text="${etf.baseIndexName}">기초지수명</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-muted" th:text="${etf.srtnCd}">123456</td>
+                                        <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(etf.closePrice, 0, 'COMMA', 0, 'POINT')} + '원'">10,000원</td>
+                                        <td th:if="${currentType == 'gainers' or currentType == 'losers'}" 
+                                            class="text-end fw-bold" 
+                                            th:data-flt-rt="${etf.fltRt}"
+                                            th:text="${etf.fltRt} + '%'">±0.00%</td>
+                                        <td th:if="${currentType == 'volume'}" 
+                                            class="text-end fw-bold" 
+                                            th:text="${#numbers.formatDecimal(etf.tradeVolume, 0, 'COMMA', 0, 'POINT')}">1,000,000</td>
+                                        <td th:if="${currentType == 'amount'}" 
+                                            class="text-end fw-bold" 
+                                            th:text="${#numbers.formatDecimal(etf.tradePrice / 100000000, 1, 'COMMA', 1, 'POINT')} + '억원'">100.0억원</td>
+                                        <td class="text-end" th:text="${#numbers.formatDecimal(etf.nav, 0, 'COMMA', 2, 'POINT')}">10,000.00</td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${etf.category == 'KODEX'} ? 'bg-success' : (${etf.category == 'TIGER'} ? 'bg-warning' : (${etf.category == '반도체'} ? 'bg-info' : 'bg-secondary'))"
+                                                  th:text="${etf.category}">카테고리</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div th:if="${etfs == null or etfs.empty}" class="p-5 text-center text-muted">
+                            <i class="fas fa-chart-line fa-3x mb-3"></i>
+                            <h4>데이터가 없습니다</h4>
+                            <p>잠시 후 다시 시도해주세요</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 정보 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-info-circle me-2"></i>안내사항</h6>
+                                <ul class="small mb-0">
+                                    <li>데이터는 실시간으로 업데이트됩니다</li>
+                                    <li>등락률은 전일 대비 변동률입니다</li>
+                                    <li>거래량/거래대금은 당일 누적 기준입니다</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-mouse-pointer me-2"></i>사용법</h6>
+                                <ul class="small mb-0">
+                                    <li>ETF명을 클릭하면 상세 정보를 볼 수 있습니다</li>
+                                    <li>상단 탭으로 다른 기준의 랭킹을 확인하세요</li>
+                                    <li>카테고리 배지를 참고하여 ETF 분류를 확인하세요</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-chart-line me-2"></i>ETF 정보 플랫폼</h5>
+                    <p class="mb-0">투자자를 위한 종합 ETF 정보 서비스</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">
+                        <small>
+                            데이터 출처: 공공데이터포털 증권상품시세정보 API<br>
+                            최종 업데이트: <span th:text="${#dates.format(#dates.createNow(), 'yyyy-MM-dd HH:mm')}">2024-01-01</span>
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Common JS -->
+    <script>
+        // 숫자 포맷팅 함수
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '-';
+            return Number(num).toLocaleString('ko-KR');
+        }
+        
+        // 가격 변동 색상 적용
+        function applyPriceColor(element, fltRt) {
+            if (fltRt > 0) {
+                element.classList.add('price-up');
+            } else if (fltRt < 0) {
+                element.classList.add('price-down');
+            } else {
+                element.classList.add('price-neutral');
+            }
+        }
+        
+        // 인증 상태 관리
+        function checkAuthStatus() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+            
+            const authButtons = document.getElementById('authButtons');
+            const userMenu = document.getElementById('userMenu');
+            const watchlistNav = document.getElementById('watchlistNav');
+            const userDisplayName = document.getElementById('userDisplayName');
+            
+            if (isLoggedIn === 'true' && user.id) {
+                // 로그인된 상태
+                authButtons.style.display = 'none';
+                userMenu.style.display = 'block';
+                watchlistNav.style.display = 'block';
+                userDisplayName.textContent = user.fullName || user.username;
+            } else {
+                // 로그인되지 않은 상태
+                authButtons.style.display = 'block';
+                userMenu.style.display = 'none';
+                watchlistNav.style.display = 'none';
+            }
+        }
+        
+        // 로그아웃
+        function logout() {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('user');
+            window.location.href = '/';
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            // 등락률에 따른 색상 적용
+            document.querySelectorAll('[data-flt-rt]').forEach(function(element) {
+                const fltRt = parseFloat(element.dataset.fltRt);
+                applyPriceColor(element, fltRt);
+            });
+            
+            // 인증 상태 확인
+            checkAuthStatus();
+        });
+    </script>
+</body>
+</html>

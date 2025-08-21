@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관심종목 - ETF 정보 플랫폼</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .watchlist-card {
+            transition: transform 0.2s ease-in-out;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .watchlist-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .price-up { color: #dc2626; font-weight: bold; }
+        .price-down { color: #2563eb; font-weight: bold; }
+        .price-neutral { color: #6b7280; font-weight: bold; }
+        .user-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .btn-heart {
+            color: #dc3545;
+            font-size: 1.2rem;
+        }
+        .btn-heart.active {
+            color: #dc3545;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-chart-line me-2"></i>
+                ETF 정보 플랫폼
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">대시보드</a>
+                <a class="nav-link active" href="/watchlist">관심종목</a>
+                <a class="nav-link" href="/rankings">랭킹</a>
+                <a class="nav-link" href="/search">검색</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 페이지 헤더 -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h1><i class="fas fa-heart text-danger me-2"></i>나의 관심종목</h1>
+                <p class="text-muted">관심 ETF를 관리하고 실시간 정보를 확인하세요</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEtfModal">
+                    <i class="fas fa-plus me-2"></i>ETF 추가
+                </button>
+            </div>
+        </div>
+
+        <!-- 관심종목 목록 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    관심종목 목록
+                </h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshWatchlist()">
+                        <i class="fas fa-sync me-1"></i>새로고침
+                    </button>
+                    <button class="btn btn-sm btn-outline-info" onclick="loadPopularEtfs()">
+                        <i class="fas fa-fire me-1"></i>인기 ETF
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="watchlistContainer" class="row">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">로딩중...</span>
+                        </div>
+                        <p class="mt-2">관심종목을 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ETF 추가 모달 -->
+    <div class="modal fade" id="addEtfModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ETF 관심종목 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addEtfForm">
+                        <div class="mb-3">
+                            <label for="etfCode" class="form-label">ETF 코드 (ISIN)</label>
+                            <input type="text" class="form-control" id="etfCode" placeholder="예: KR7069500007" required>
+                            <div class="form-text">KODEX 200: KR7069500007</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="etfMemo" class="form-label">메모 (선택)</label>
+                            <textarea class="form-control" id="etfMemo" rows="3" placeholder="개인 메모를 입력하세요"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" onclick="addToWatchlist()">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 컨테이너 -->
+    <div class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 현재 사용자 정보 (세션스토리지에서 가져옴)
+        let currentUser = null;
+        
+        // 로그인 상태 확인
+        function checkLoginStatus() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+            
+            if (isLoggedIn !== 'true' || !user.id) {
+                showToast('로그인이 필요합니다.', 'warning');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return false;
+            }
+            
+            currentUser = user;
+            return true;
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkLoginStatus()) {
+                loadUserInfo();
+                loadWatchlist();
+                loadStatistics();
+            }
+        });
+
+        // 사용자 정보 로드
+        async function loadUserInfo() {
+            try {
+                const response = await fetch(`/api/users/${currentUser.id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('username').textContent = data.user.username;
+                    document.getElementById('email').textContent = data.user.email;
+                    document.getElementById('watchlistCount').textContent = data.user.watchListCount || 0;
+                }
+            } catch (error) {
+                console.error('사용자 정보 로드 실패:', error);
+            }
+        }
+
+        // 관심종목 목록 로드
+        async function loadWatchlist() {
+            try {
+                const response = await fetch(`/api/watchlist?userId=${currentUser.id}&includeEtfInfo=true`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayWatchlist(data.data);
+                } else {
+                    showToast('관심종목 로드 실패: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('관심종목 로드 실패:', error);
+                showToast('관심종목을 불러오는 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 전체 통계 로드
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/watchlist/statistics');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.statistics;
+                    document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+                    document.getElementById('totalEtfs').textContent = stats.totalEtfs || 0;
+                    document.getElementById('totalWatchlists').textContent = stats.totalWatchLists || 0;
+                }
+            } catch (error) {
+                console.error('통계 로드 실패:', error);
+                // 오류 시 기본값 표시
+                document.getElementById('totalUsers').textContent = '0';
+                document.getElementById('totalEtfs').textContent = '0';
+                document.getElementById('totalWatchlists').textContent = '0';
+            }
+        }
+
+        // 관심종목 표시
+        function displayWatchlist(watchlistData) {
+            const container = document.getElementById('watchlistContainer');
+            
+            if (!watchlistData || watchlistData.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-heart-broken text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">관심종목이 없습니다</h5>
+                        <p class="text-muted">ETF 추가 버튼을 클릭하여 관심종목을 등록해보세요!</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEtfModal">
+                            <i class="fas fa-plus me-2"></i>첫 번째 ETF 추가
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            watchlistData.forEach(item => {
+                const etf = item.etfInfo;
+                const changeClass = etf?.fltRt > 0 ? 'price-up' : (etf?.fltRt < 0 ? 'price-down' : 'price-neutral');
+                const changeIcon = etf?.fltRt > 0 ? 'fa-arrow-up' : (etf?.fltRt < 0 ? 'fa-arrow-down' : 'fa-minus');
+                
+                html += `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card watchlist-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">${item.etfName || item.isinCd}</h6>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="removeFromWatchlist('${item.isinCd}')">
+                                        <i class="fas fa-heart-broken"></i>
+                                    </button>
+                                </div>
+                                <p class="text-muted small mb-2">${item.shortCode} (${item.isinCd})</p>
+                                
+                                ${etf ? `
+                                <div class="row text-center mb-2">
+                                    <div class="col-6">
+                                        <strong>${etf.closePrice?.toLocaleString() || '-'}</strong>
+                                        <div class="small text-muted">종가</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="${changeClass}">
+                                            <i class="fas ${changeIcon}"></i>
+                                            ${etf.fltRt?.toFixed(2) || '0.00'}%
+                                        </strong>
+                                        <div class="small text-muted">등락률</div>
+                                    </div>
+                                </div>
+                                ` : '<div class="text-center text-muted">ETF 정보 없음</div>'}
+                                
+                                ${item.memo ? `
+                                <div class="border-top pt-2 mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-sticky-note me-1"></i>
+                                        ${item.memo}
+                                    </small>
+                                </div>
+                                ` : ''}
+                                
+                                <div class="text-end mt-2">
+                                    <small class="text-muted">${new Date(item.createdAt).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 관심종목 추가
+        async function addToWatchlist() {
+            const etfCode = document.getElementById('etfCode').value.trim();
+            const memo = document.getElementById('etfMemo').value.trim();
+            
+            if (!etfCode) {
+                showToast('ETF 코드를 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/watchlist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `userId=${currentUser.id}&isinCd=${etfCode}&memo=${encodeURIComponent(memo)}`
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('관심종목이 추가되었습니다!', 'success');
+                    document.getElementById('addEtfForm').reset();
+                    bootstrap.Modal.getInstance(document.getElementById('addEtfModal')).hide();
+                    loadWatchlist();
+                    loadUserInfo();
+                } else {
+                    showToast('추가 실패: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('관심종목 추가 실패:', error);
+                showToast('관심종목 추가 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 관심종목 제거
+        async function removeFromWatchlist(isinCd) {
+            if (!confirm('정말로 관심종목에서 제거하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/watchlist/${isinCd}?userId=${currentUser.id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('관심종목에서 제거되었습니다.', 'success');
+                    loadWatchlist();
+                    loadUserInfo();
+                } else {
+                    showToast('제거 실패: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('관심종목 제거 실패:', error);
+                showToast('관심종목 제거 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 관심종목 새로고침
+        function refreshWatchlist() {
+            loadWatchlist();
+            loadUserInfo();
+            loadStatistics();
+            showToast('새로고침 완료!', 'success');
+        }
+
+        // 인기 ETF 로드
+        async function loadPopularEtfs() {
+            try {
+                const response = await fetch('/api/watchlist/popular?limit=5');
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    let message = '📈 인기 ETF TOP 5:\n';
+                    data.forEach((etf, index) => {
+                        message += `${index + 1}. ${etf.etfName} (❤️${etf.likeCount})\n`;
+                    });
+                    alert(message);
+                } else {
+                    showToast('인기 ETF 데이터가 없습니다.', 'info');
+                }
+            } catch (error) {
+                console.error('인기 ETF 로드 실패:', error);
+                showToast('인기 ETF를 불러오는 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // Toast 메시지 표시
+        function showToast(message, type = 'info') {
+            const toastContainer = document.querySelector('.toast-container');
+            const toastId = 'toast-' + Date.now();
+            
+            const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // 토스트가 숨겨진 후 DOM에서 제거
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
+    </script>
+</body>
+</html>

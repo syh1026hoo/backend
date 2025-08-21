@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title th:text="${etf?.itmsNm + ' - ETF 상세정보'}">ETF 상세정보</title>
+</head>
+<body>
+    <main th:fragment="main" th:if="${etf}">
+        <!-- 페이지 헤더 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">홈</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">ETF 상세정보</li>
+                    </ol>
+                </nav>
+                
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h1 class="section-title mb-2" th:text="${etf.itmsNm}">ETF명</h1>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-secondary fs-6" th:text="${etf.srtnCd}">종목코드</span>
+                            <span class="badge fs-6" 
+                                  th:classappend="${etf.category == 'KODEX'} ? 'bg-success' : (${etf.category == 'TIGER'} ? 'bg-warning' : (${etf.category == '반도체'} ? 'bg-info' : 'bg-secondary'))"
+                                  th:text="${etf.category}">카테고리</span>
+                            <small class="text-muted">ISIN: <span th:text="${etf.isinCd}">KR1234567890</span></small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button onclick="history.back()" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            뒤로가기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 가격 정보 카드 -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            가격 정보
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="text-muted mb-2">현재가</div>
+                                    <div class="display-6 fw-bold" th:text="${#numbers.formatDecimal(etf.closePrice, 0, 'COMMA', 0, 'POINT')} + '원'">10,000원</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div class="text-muted mb-2">등락률</div>
+                                    <div class="display-6 fw-bold" 
+                                         th:data-flt-rt="${etf.fltRt}"
+                                         th:text="${etf.fltRt} + '%'">±0.00%</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-3 col-sm-6">
+                                <div class="text-center p-2">
+                                    <div class="text-muted small">NAV</div>
+                                    <div class="fw-bold" th:text="${#numbers.formatDecimal(etf.nav, 0, 'COMMA', 2, 'POINT')}">10,000.00</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="text-center p-2">
+                                    <div class="text-muted small">전일대비</div>
+                                    <div class="fw-bold" 
+                                         th:data-flt-rt="${etf.vs}"
+                                         th:text="${etf.vs} + '원'">±0원</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="text-center p-2">
+                                    <div class="text-muted small">시가총액</div>
+                                    <div class="fw-bold" th:text="${etf.marketTotalAmt != null ? #numbers.formatDecimal(etf.marketTotalAmt / 100000000, 0, 'COMMA', 0, 'POINT') + '억원' : '-'}">1,000억원</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="text-center p-2">
+                                    <div class="text-muted small">순자산</div>
+                                    <div class="fw-bold" th:text="${etf.netAssetTotalAmt != null ? #numbers.formatDecimal(etf.netAssetTotalAmt / 100000000, 0, 'COMMA', 0, 'POINT') + '억원' : '-'}">1,000억원</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            기본 정보
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="text-muted small">기준일자</div>
+                            <div class="fw-bold" th:text="${etf.baseDate}">2024-01-01</div>
+                        </div>
+                        
+                        <div class="mb-3" th:if="${etf.baseIndexName}">
+                            <div class="text-muted small">기초지수</div>
+                            <div class="fw-bold" th:text="${etf.baseIndexName}">기초지수명</div>
+                        </div>
+                        
+                        <div class="mb-3" th:if="${etf.baseIndexClosePrice}">
+                            <div class="text-muted small">기초지수 종가</div>
+                            <div class="fw-bold" th:text="${#numbers.formatDecimal(etf.baseIndexClosePrice, 0, 'COMMA', 2, 'POINT')}">100.00</div>
+                        </div>
+                        
+                        <div class="mb-3" th:if="${etf.stLstgCnt}">
+                            <div class="text-muted small">상장주식수</div>
+                            <div class="fw-bold" th:text="${#numbers.formatDecimal(etf.stLstgCnt, 0, 'COMMA', 0, 'POINT')} + '주'">1,000,000주</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 거래 정보 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-exchange-alt me-2"></i>
+                            거래 정보
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-2 col-sm-4 col-6">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="text-muted small">거래량</div>
+                                    <div class="fw-bold" th:text="${etf.tradeVolume != null ? #numbers.formatDecimal(etf.tradeVolume, 0, 'COMMA', 0, 'POINT') : '-'}">0</div>
+                                    <div class="text-muted small">주</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-sm-4 col-6">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="text-muted small">거래대금</div>
+                                    <div class="fw-bold" th:text="${etf.tradePrice != null ? #numbers.formatDecimal(etf.tradePrice / 100000000, 1, 'COMMA', 1, 'POINT') : '-'}">0.0</div>
+                                    <div class="text-muted small">억원</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-sm-4 col-6">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="text-muted small">시가</div>
+                                    <div class="fw-bold" th:text="${etf.openPrice != null ? #numbers.formatDecimal(etf.openPrice, 0, 'COMMA', 0, 'POINT') : '-'}">0</div>
+                                    <div class="text-muted small">원</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-sm-4 col-6">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="text-muted small">고가</div>
+                                    <div class="fw-bold" th:text="${etf.highPrice != null ? #numbers.formatDecimal(etf.highPrice, 0, 'COMMA', 0, 'POINT') : '-'}">0</div>
+                                    <div class="text-muted small">원</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-sm-4 col-6">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="text-muted small">저가</div>
+                                    <div class="fw-bold" th:text="${etf.lowPrice != null ? #numbers.formatDecimal(etf.lowPrice, 0, 'COMMA', 0, 'POINT') : '-'}">0</div>
+                                    <div class="text-muted small">원</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-sm-4 col-6">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="text-muted small">상태</div>
+                                    <div class="fw-bold" 
+                                         th:data-flt-rt="${etf.fltRt}"
+                                         th:text="${etf.priceDirection}">보합</div>
+                                    <div class="text-muted small">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 알림 관리 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-bell me-2"></i>
+                            가격 알림 설정
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <button type="button" class="btn btn-outline-danger w-100" 
+                                        data-bs-toggle="modal" data-bs-target="#alertModal" 
+                                        data-alert-type="PERCENTAGE_DROP" data-threshold="-3">
+                                    <i class="fas fa-arrow-down me-2"></i>
+                                    3% 하락 알림
+                                </button>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <button type="button" class="btn btn-outline-warning w-100" 
+                                        data-bs-toggle="modal" data-bs-target="#alertModal" 
+                                        data-alert-type="PERCENTAGE_DROP" data-threshold="-5">
+                                    <i class="fas fa-arrow-down me-2"></i>
+                                    5% 하락 알림
+                                </button>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <button type="button" class="btn btn-outline-success w-100" 
+                                        data-bs-toggle="modal" data-bs-target="#alertModal" 
+                                        data-alert-type="PERCENTAGE_RISE" data-threshold="5">
+                                    <i class="fas fa-arrow-up me-2"></i>
+                                    5% 상승 알림
+                                </button>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a th:href="@{/etf/{isinCd}/alerts(isinCd=${etf.isinCd}, userId=1)}" class="btn btn-info w-100">
+                                    <i class="fas fa-cog me-2"></i>
+                                    상세 설정
+                                </a>
+                            </div>
+                        </div>
+                        <div class="alert alert-light small mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>현재가: </strong>
+                            <span th:text="${#numbers.formatDecimal(etf.closePrice, 0, 'COMMA', 0, 'POINT')} + '원'">10,000원</span>
+                            <span class="mx-2">|</span>
+                            <strong>전일대비: </strong>
+                            <span th:text="${etf.vs != null ? (#numbers.formatDecimal(etf.vs, 0, 'COMMA', 0, 'POINT') + '원') : '-'}" 
+                                  th:classappend="${etf.vs != null ? (etf.vs > 0 ? 'text-danger' : (etf.vs < 0 ? 'text-primary' : 'text-muted')) : 'text-muted'}">+100원</span>
+                            <span class="mx-2">|</span>
+                            설정한 조건에 도달하면 알림을 받을 수 있습니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 관련 ETF 추천 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            관련 ETF 더보기
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <a th:href="@{/search(keyword=${etf.category})}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-tag me-2"></i>
+                                    같은 카테고리 ETF
+                                    <span class="badge bg-primary ms-2" th:text="${etf.category}">카테고리</span>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3" th:if="${etf.baseIndexName}">
+                                <a th:href="@{/search(keyword=${#strings.substring(etf.baseIndexName, 0, 10)})}" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    같은 지수 ETF
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="/rankings?type=gainers" class="btn btn-outline-warning w-100">
+                                    <i class="fas fa-trophy me-2"></i>
+                                    상위 등락률 ETF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 주의사항 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-exclamation-circle me-2"></i>투자 주의사항</h6>
+                    <ul class="mb-0 small">
+                        <li>이 정보는 투자 참고용이며, 투자 권유를 목적으로 하지 않습니다</li>
+                        <li>ETF 투자 시 원금 손실 위험이 있으므로 신중한 투자 결정이 필요합니다</li>
+                        <li>실제 투자 전 해당 ETF의 투자설명서와 간이투자설명서를 반드시 확인하시기 바랍니다</li>
+                        <li>과거 수익률이 미래 수익률을 보장하지 않습니다</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 알림 설정 모달 -->
+        <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="alertModalLabel">
+                            <i class="fas fa-bell me-2"></i>
+                            가격 알림 설정
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="alertForm">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">ETF 정보</label>
+                                <div class="alert alert-light">
+                                    <div><strong th:text="${etf.itmsNm}">ETF명</strong></div>
+                                    <div class="text-muted">
+                                        현재가: <span th:text="${#numbers.formatDecimal(etf.closePrice, 0, 'COMMA', 0, 'POINT')} + '원'">10,000원</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="alertType" class="form-label">알림 유형</label>
+                                <select class="form-select" id="alertType" name="conditionType" required>
+                                    <option value="">선택하세요</option>
+                                    <option value="PERCENTAGE_DROP">비율 하락 (%)</option>
+                                    <option value="PERCENTAGE_RISE">비율 상승 (%)</option>
+                                    <option value="PRICE_TARGET">목표 가격 (원)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="thresholdValue" class="form-label">조건값</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="thresholdValue" name="thresholdValue" 
+                                           step="0.1" required placeholder="예: -3, 5, 15000">
+                                    <span class="input-group-text" id="thresholdUnit">%</span>
+                                </div>
+                                <div class="form-text">
+                                    <small id="alertTypeHelp">
+                                        하락: -3 (3% 하락), 상승: 5 (5% 상승), 목표가격: 15000 (15,000원)
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">메모 (선택사항)</label>
+                                <textarea class="form-control" id="description" name="description" rows="2" 
+                                          placeholder="알림에 대한 메모를 입력하세요"></textarea>
+                            </div>
+
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-2"></i>
+                                설정한 조건에 도달하면 웹사이트에서 알림을 확인할 수 있습니다.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                            <button type="submit" class="btn btn-primary">알림 설정</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        $(document).ready(function() {
+            // 알림 모달 열기 시 데이터 설정
+            $('#alertModal').on('show.bs.modal', function (event) {
+                const button = $(event.relatedTarget);
+                const alertType = button.data('alert-type');
+                const threshold = button.data('threshold');
+                
+                if (alertType) {
+                    $('#alertType').val(alertType);
+                    updateThresholdUnit(alertType);
+                }
+                if (threshold) {
+                    $('#thresholdValue').val(threshold);
+                }
+            });
+
+            // 알림 유형 변경 시 단위 업데이트
+            $('#alertType').change(function() {
+                updateThresholdUnit($(this).val());
+            });
+
+            function updateThresholdUnit(alertType) {
+                const unit = $('#thresholdUnit');
+                const help = $('#alertTypeHelp');
+                
+                if (alertType === 'PRICE_TARGET') {
+                    unit.text('원');
+                    help.text('목표 가격을 원 단위로 입력하세요 (예: 15000)');
+                } else {
+                    unit.text('%');
+                    if (alertType === 'PERCENTAGE_DROP') {
+                        help.text('하락률을 음수로 입력하세요 (예: -3, -5)');
+                    } else if (alertType === 'PERCENTAGE_RISE') {
+                        help.text('상승률을 양수로 입력하세요 (예: 5, 10)');
+                    } else {
+                        help.text('하락: -3 (3% 하락), 상승: 5 (5% 상승), 목표가격: 15000 (15,000원)');
+                    }
+                }
+            }
+
+            // 알림 설정 폼 제출
+            $('#alertForm').submit(function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    userId: 1, // 임시 사용자 ID
+                    isinCd: '[[${etf.isinCd}]]',
+                    conditionType: $('#alertType').val(),
+                    thresholdValue: parseFloat($('#thresholdValue').val()),
+                    description: $('#description').val()
+                };
+
+                $.ajax({
+                    url: '/api/alerts/conditions',
+                    method: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            alert('알림이 설정되었습니다!');
+                            $('#alertModal').modal('hide');
+                            $('#alertForm')[0].reset();
+                        } else {
+                            alert('오류: ' + response.message);
+                        }
+                    },
+                    error: function(xhr) {
+                        const response = xhr.responseJSON;
+                        alert('오류: ' + (response ? response.message : '알림 설정에 실패했습니다.'));
+                    }
+                });
+            });
+        });
+        </script>
+    </main>
+</body>
+</html>

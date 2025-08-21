@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - ETF 정보 플랫폼</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .login-body {
+            padding: 2rem;
+        }
+        .form-control {
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            padding: 12px 15px;
+        }
+        .form-control:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+        }
+        .btn-login:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+        }
+        .social-login {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="login-container">
+                    <div class="login-header">
+                        <i class="fas fa-chart-line fa-3x mb-3"></i>
+                        <h3 class="mb-0">ETF 정보 플랫폼</h3>
+                        <p class="mb-0 mt-2">로그인하여 서비스를 이용하세요</p>
+                    </div>
+                    
+                    <div class="login-body">
+                        <!-- 로그인 폼 -->
+                        <form id="loginForm" style="display: block;">
+                            <div class="mb-3">
+                                <label for="loginUsername" class="form-label">아이디 또는 이메일</label>
+                                <input type="text" class="form-control" id="loginUsername" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="loginPassword" class="form-label">비밀번호</label>
+                                <input type="password" class="form-control" id="loginPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-login btn-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i>로그인
+                            </button>
+                        </form>
+                        
+                        <!-- 회원가입 폼 -->
+                        <form id="registerForm" style="display: none;">
+                            <div class="mb-3">
+                                <label for="registerUsername" class="form-label">사용자명</label>
+                                <input type="text" class="form-control" id="registerUsername" required>
+                                <div class="form-text">영문, 숫자, 언더스코어만 사용 가능</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="registerEmail" class="form-label">이메일</label>
+                                <input type="email" class="form-control" id="registerEmail" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="registerFullName" class="form-label">실명</label>
+                                <input type="text" class="form-control" id="registerFullName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="registerPassword" class="form-label">비밀번호</label>
+                                <input type="password" class="form-control" id="registerPassword" required>
+                                <div class="form-text">최소 8자 이상</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="registerPasswordConfirm" class="form-label">비밀번호 확인</label>
+                                <input type="password" class="form-control" id="registerPasswordConfirm" required>
+                            </div>
+                            <button type="submit" class="btn btn-login btn-primary">
+                                <i class="fas fa-user-plus me-2"></i>회원가입
+                            </button>
+                        </form>
+                        
+                        <!-- 알림 메시지 -->
+                        <div id="alertContainer"></div>
+                        
+                        <!-- 폼 전환 버튼 -->
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-link" id="toggleForm">
+                                회원가입하기
+                            </button>
+                        </div>
+                        
+                        <!-- 홈으로 돌아가기 -->
+                        <div class="text-center mt-3">
+                            <a href="/" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-home me-1"></i>홈으로
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let isLoginForm = true;
+        
+        // 폼 전환
+        document.getElementById('toggleForm').addEventListener('click', function() {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const toggleBtn = document.getElementById('toggleForm');
+            
+            if (isLoginForm) {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                toggleBtn.textContent = '로그인하기';
+                isLoginForm = false;
+            } else {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                toggleBtn.textContent = '회원가입하기';
+                isLoginForm = true;
+            }
+            
+            // 알림 메시지 초기화
+            clearAlert();
+        });
+        
+        // 로그인 폼 제출
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            if (!username || !password) {
+                showAlert('모든 필드를 입력해주세요.', 'danger');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `usernameOrEmail=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('로그인 성공! 잠시 후 홈으로 이동합니다.', 'success');
+                    
+                    // 사용자 정보를 세션스토리지에 저장
+                    sessionStorage.setItem('user', JSON.stringify(data.user));
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    
+                    // 2초 후 홈으로 이동
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    showAlert(data.message || '로그인에 실패했습니다.', 'danger');
+                }
+            } catch (error) {
+                console.error('로그인 오류:', error);
+                showAlert('로그인 처리 중 오류가 발생했습니다.', 'danger');
+            }
+        });
+        
+        // 회원가입 폼 제출
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const fullName = document.getElementById('registerFullName').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+            
+            if (!username || !email || !fullName || !password || !passwordConfirm) {
+                showAlert('모든 필드를 입력해주세요.', 'danger');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                showAlert('비밀번호가 일치하지 않습니다.', 'danger');
+                return;
+            }
+            
+            if (password.length < 8) {
+                showAlert('비밀번호는 최소 8자 이상이어야 합니다.', 'danger');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&fullName=${encodeURIComponent(fullName)}&password=${encodeURIComponent(password)}`
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('회원가입이 완료되었습니다! 로그인해주세요.', 'success');
+                    
+                    // 폼 초기화
+                    document.getElementById('registerForm').reset();
+                    
+                    // 로그인 폼으로 전환
+                    document.getElementById('toggleForm').click();
+                } else {
+                    showAlert(data.message || '회원가입에 실패했습니다.', 'danger');
+                }
+            } catch (error) {
+                console.error('회원가입 오류:', error);
+                showAlert('회원가입 처리 중 오류가 발생했습니다.', 'danger');
+            }
+        });
+        
+        // 알림 메시지 표시
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHtml;
+        }
+        
+        // 알림 메시지 초기화
+        function clearAlert() {
+            document.getElementById('alertContainer').innerHTML = '';
+        }
+        
+        // 페이지 로드 시 로그인 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            if (isLoggedIn === 'true') {
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>

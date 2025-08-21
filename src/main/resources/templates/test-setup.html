@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테스트 설정 - ETF 정보 플랫폼</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        .test-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+        .btn-test {
+            margin: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="test-container">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-cogs fa-3x text-primary mb-3"></i>
+                        <h2>테스트 설정</h2>
+                        <p class="text-muted">ETF 정보 플랫폼 테스트를 위한 설정 페이지입니다.</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-user me-2"></i>사용자 관리</h5>
+                                </div>
+                                <div class="card-body">
+                                    <button class="btn btn-primary btn-test" onclick="createTestUser()">
+                                        <i class="fas fa-user-plus me-2"></i>테스트 사용자 생성
+                                    </button>
+                                    <button class="btn btn-info btn-test" onclick="showTestUserInfo()">
+                                        <i class="fas fa-info-circle me-2"></i>테스트 사용자 정보
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-heart me-2"></i>관심종목 테스트</h5>
+                                </div>
+                                <div class="card-body">
+                                    <button class="btn btn-success btn-test" onclick="testWatchlist()">
+                                        <i class="fas fa-heart me-2"></i>관심종목 페이지 테스트
+                                    </button>
+                                    <button class="btn btn-warning btn-test" onclick="testLogin()">
+                                        <i class="fas fa-sign-in-alt me-2"></i>로그인 페이지 테스트
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-terminal me-2"></i>테스트 결과</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="testResults">
+                                <p class="text-muted">테스트를 실행하면 결과가 여기에 표시됩니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="/" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-2"></i>홈으로 돌아가기
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 테스트 결과 표시
+        function showResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const alertClass = type === 'success' ? 'alert-success' : 
+                             type === 'error' ? 'alert-danger' : 
+                             type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            const resultHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                      type === 'error' ? 'exclamation-triangle' : 
+                                      type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+        }
+        
+        // 테스트 사용자 생성
+        async function createTestUser() {
+            try {
+                showResult('테스트 사용자 생성 중...', 'info');
+                
+                const response = await fetch('/api/users/test-user', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult(`✅ ${data.message}<br><strong>사용자명:</strong> ${data.user.username}<br><strong>비밀번호:</strong> ${data.user.password}`, 'success');
+                } else {
+                    showResult(`❌ ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('테스트 사용자 생성 실패:', error);
+                showResult('❌ 테스트 사용자 생성 중 오류가 발생했습니다.', 'error');
+            }
+        }
+        
+        // 테스트 사용자 정보 표시
+        async function showTestUserInfo() {
+            try {
+                showResult('테스트 사용자 정보 조회 중...', 'info');
+                
+                // 먼저 테스트 사용자 생성 시도
+                const createResponse = await fetch('/api/users/test-user', {
+                    method: 'POST'
+                });
+                
+                const createData = await createResponse.json();
+                
+                if (createData.success) {
+                    const userId = createData.user.id;
+                    
+                    // 사용자 정보 조회
+                    const userResponse = await fetch(`/api/users/${userId}`);
+                    const userData = await userResponse.json();
+                    
+                    if (userData.success) {
+                        const user = userData.user;
+                        showResult(`✅ 테스트 사용자 정보:<br><strong>ID:</strong> ${user.id}<br><strong>사용자명:</strong> ${user.username}<br><strong>이메일:</strong> ${user.email}<br><strong>실명:</strong> ${user.fullName}<br><strong>상태:</strong> ${user.status}`, 'success');
+                    } else {
+                        showResult('❌ 사용자 정보 조회 실패', 'error');
+                    }
+                } else {
+                    showResult('❌ 테스트 사용자 생성 실패', 'error');
+                }
+            } catch (error) {
+                console.error('사용자 정보 조회 실패:', error);
+                showResult('❌ 사용자 정보 조회 중 오류가 발생했습니다.', 'error');
+            }
+        }
+        
+        // 관심종목 페이지 테스트
+        function testWatchlist() {
+            showResult('🔗 관심종목 페이지로 이동합니다...', 'info');
+            setTimeout(() => {
+                window.location.href = '/watchlist';
+            }, 1000);
+        }
+        
+        // 로그인 페이지 테스트
+        function testLogin() {
+            showResult('🔗 로그인 페이지로 이동합니다...', 'info');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

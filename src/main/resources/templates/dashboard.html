@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>대시보드</title>
+</head>
+<body>
+    <main th:fragment="main">
+        <!-- 페이지 헤더 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="section-title">
+                    <i class="fas fa-chart-line me-2"></i>
+                    ETF 시장 대시보드
+                </h1>
+                <p class="text-muted">실시간 ETF 시장 현황과 주요 지표를 확인하세요</p>
+            </div>
+        </div>
+
+        <!-- 시장 현황 카드 -->
+        <div class="row mb-4" th:if="${marketStats}">
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <div class="text-primary mb-2">
+                            <i class="fas fa-list fa-2x"></i>
+                        </div>
+                        <h4 class="card-title" th:text="${marketStats.totalCount}">0</h4>
+                        <p class="card-text text-muted">전체 ETF</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <div class="text-danger mb-2">
+                            <i class="fas fa-arrow-up fa-2x"></i>
+                        </div>
+                        <h4 class="card-title price-up" th:text="${marketStats.risingCount}">0</h4>
+                        <p class="card-text text-muted">
+                            상승 (<span th:text="${marketStats.risingRatio}">0%</span>)
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <div class="text-primary mb-2">
+                            <i class="fas fa-arrow-down fa-2x"></i>
+                        </div>
+                        <h4 class="card-title price-down" th:text="${marketStats.fallingCount}">0</h4>
+                        <p class="card-text text-muted">
+                            하락 (<span th:text="${marketStats.fallingRatio}">0%</span>)
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <div class="text-secondary mb-2">
+                            <i class="fas fa-minus fa-2x"></i>
+                        </div>
+                        <h4 class="card-title price-neutral" th:text="${marketStats.neutralCount}">0</h4>
+                        <p class="card-text text-muted">
+                            보합 (<span th:text="${marketStats.neutralRatio}">0%</span>)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+         <!-- 차트 섹션 -->
+         <div class="row mb-4" th:if="${marketStats}">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            시장 분포
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="marketDistributionChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            등락률 분포
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="changeRateChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 등락률 구간별 분포 차트 -->
+        <div class="row mb-4" th:if="${marketStats}">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            등락률 구간별 분포
+                        </h5>
+                        <small class="text-muted">전체 종목수: <span th:text="${marketStats.totalCount}">0</span>개</small>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="changeRateDistributionChart" style="max-height: 400px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 등락률 구간별 요약 -->
+        <div class="row mb-4" th:if="${marketStats}">
+            <div class="col-md-4 mb-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <h4 class="card-title" th:text="${marketStats.fallingCount}">0</h4>
+                        <p class="card-text mb-0">하락 종목</p>
+                        <small th:text="${marketStats.fallingRatio} + '%'">0%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-secondary text-white">
+                    <div class="card-body text-center">
+                        <h4 class="card-title" th:text="${marketStats.neutralCount}">0</h4>
+                        <p class="card-text mb-0">보합 종목</p>
+                        <small th:text="${marketStats.neutralRatio} + '%'">0%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h4 class="card-title" th:text="${marketStats.risingCount}">0</h4>
+                        <p class="card-text mb-0">상승 종목</p>
+                        <small th:text="${marketStats.risingRatio} + '%'">0%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ETF 랭킹 섹션 -->
+        <div class="row">
+            <!-- 상위 등락률 -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-arrow-up text-danger me-2"></i>
+                            등락률 상위 ETF
+                        </h5>
+                        <a href="/rankings?type=gainers" class="btn btn-sm btn-outline-primary">전체보기</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${topGainers != null and !topGainers.empty}">
+                            <div th:each="etf, iterStat : ${topGainers}" 
+                                 class="d-flex justify-content-between align-items-center p-3 border-bottom etf-item"
+                                 th:classappend="${iterStat.last} ? '' : 'border-bottom'">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-danger me-2" th:text="${iterStat.count}">1</span>
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <a th:href="@{/etf/{isinCd}(isinCd=${etf.isinCd})}" 
+                                                   class="text-decoration-none" th:text="${etf.itmsNm}">ETF명</a>
+                                            </h6>
+                                            <small class="text-muted" th:text="${etf.srtnCd}">코드</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="price-up fw-bold" th:text="${etf.fltRt} + '%'">+5.23%</div>
+                                    <small class="text-muted" th:text="${#numbers.formatDecimal(etf.closePrice, 0, 'COMMA', 0, 'POINT')} + '원'">30,000원</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${topGainers == null or topGainers.empty}" class="p-3 text-center text-muted">
+                            데이터가 없습니다
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하위 등락률 -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-arrow-down text-primary me-2"></i>
+                            등락률 하위 ETF
+                        </h5>
+                        <a href="/rankings?type=losers" class="btn btn-sm btn-outline-primary">전체보기</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${topLosers != null and !topLosers.empty}">
+                            <div th:each="etf, iterStat : ${topLosers}" 
+                                 class="d-flex justify-content-between align-items-center p-3"
+                                 th:classappend="${iterStat.last} ? '' : 'border-bottom'">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary me-2" th:text="${iterStat.count}">1</span>
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <a th:href="@{/etf/{isinCd}(isinCd=${etf.isinCd})}" 
+                                                   class="text-decoration-none" th:text="${etf.itmsNm}">ETF명</a>
+                                            </h6>
+                                            <small class="text-muted" th:text="${etf.srtnCd}">코드</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="price-down fw-bold" th:text="${etf.fltRt} + '%'">-3.45%</div>
+                                    <small class="text-muted" th:text="${#numbers.formatDecimal(etf.closePrice, 0, 'COMMA', 0, 'POINT')} + '원'">25,000원</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${topLosers == null or topLosers.empty}" class="p-3 text-center text-muted">
+                            데이터가 없습니다
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 거래량 상위 -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar text-success me-2"></i>
+                            거래량 상위 ETF
+                        </h5>
+                        <a href="/rankings?type=volume" class="btn btn-sm btn-outline-primary">전체보기</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${mostTradedVolume != null and !mostTradedVolume.empty}">
+                            <div th:each="etf, iterStat : ${mostTradedVolume}" 
+                                 class="d-flex justify-content-between align-items-center p-3"
+                                 th:classappend="${iterStat.last} ? '' : 'border-bottom'">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-success me-2" th:text="${iterStat.count}">1</span>
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <a th:href="@{/etf/{isinCd}(isinCd=${etf.isinCd})}" 
+                                                   class="text-decoration-none" th:text="${etf.itmsNm}">ETF명</a>
+                                            </h6>
+                                            <small class="text-muted" th:text="${etf.srtnCd}">코드</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold" th:text="${#numbers.formatDecimal(etf.tradeVolume, 0, 'COMMA', 0, 'POINT')}">1,000,000</div>
+                                    <small class="text-muted">주</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${mostTradedVolume == null or mostTradedVolume.empty}" class="p-3 text-center text-muted">
+                            데이터가 없습니다
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 거래대금 상위 -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-coins text-warning me-2"></i>
+                            거래대금 상위 ETF
+                        </h5>
+                        <a href="/rankings?type=amount" class="btn btn-sm btn-outline-primary">전체보기</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${mostTradedAmount != null and !mostTradedAmount.empty}">
+                            <div th:each="etf, iterStat : ${mostTradedAmount}" 
+                                 class="d-flex justify-content-between align-items-center p-3"
+                                 th:classappend="${iterStat.last} ? '' : 'border-bottom'">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-warning me-2" th:text="${iterStat.count}">1</span>
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <a th:href="@{/etf/{isinCd}(isinCd=${etf.isinCd})}" 
+                                                   class="text-decoration-none" th:text="${etf.itmsNm}">ETF명</a>
+                                            </h6>
+                                            <small class="text-muted" th:text="${etf.srtnCd}">코드</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold" th:text="${#numbers.formatDecimal(etf.tradePrice, 0, 'COMMA', 0, 'POINT')}">1,000,000,000</div>
+                                    <small class="text-muted">원</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${mostTradedAmount == null or mostTradedAmount.empty}" class="p-3 text-center text-muted">
+                            데이터가 없습니다
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 빠른 액세스 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-bolt me-2"></i>
+                            빠른 액세스
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="/themes/반도체" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-microchip me-2"></i>
+                                    반도체 ETF
+                                </a>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="/themes/KODEX" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    KODEX ETF
+                                </a>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="/themes/TIGER" class="btn btn-outline-warning w-100">
+                                    <i class="fas fa-chart-area me-2"></i>
+                                    TIGER ETF
+                                </a>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="/search?keyword=AI" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-robot me-2"></i>
+                                    AI 관련 ETF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 차트 스크립트 -->
+        <script th:if="${marketStats}">
+            document.addEventListener('DOMContentLoaded', function() {
+                // 시장 분포 파이 차트
+                const marketCtx = document.getElementById('marketDistributionChart').getContext('2d');
+                new Chart(marketCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['상승', '하락', '보합'],
+                        datasets: [{
+                            data: [
+                                /*[[${marketStats.risingCount}]]*/ 0,
+                                /*[[${marketStats.fallingCount}]]*/ 0,
+                                /*[[${marketStats.neutralCount}]]*/ 0
+                            ],
+                            backgroundColor: ['#dc2626', '#2563eb', '#6b7280']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+    
+                // 등락률 분포 바 차트
+                const changeCtx = document.getElementById('changeRateChart').getContext('2d');
+                new Chart(changeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['상승', '하락', '보합'],
+                        datasets: [{
+                            label: 'ETF 수',
+                            data: [
+                                /*[[${marketStats.risingCount}]]*/ 0,
+                                /*[[${marketStats.fallingCount}]]*/ 0,
+                                /*[[${marketStats.neutralCount}]]*/ 0
+                            ],
+                            backgroundColor: ['#dc2626', '#2563eb', '#6b7280']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+    
+                // 등락률 구간별 분포 차트 (새로 추가)
+                const distributionCtx = document.getElementById('changeRateDistributionChart').getContext('2d');
+                
+                // 등락률 구간별 데이터 (실제로는 서버에서 계산된 데이터를 사용해야 함)
+                const changeRateData = {
+                    labels: ['-10% 이하', '-10% ~ -5%', '-5% ~ -3%', '-3% ~ -1%', '-1% ~ 0%', '0%', '0% ~ 1%', '1% ~ 3%', '3% ~ 5%', '5% ~ 10%', '10% 이상'],
+                    datasets: [{
+                        label: '종목 수',
+                        data: [
+                            /*[[${marketStats.changeRateDistribution?.get('-10') ?: 0}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('-5') ?: 0}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('-3') ?: 0}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('-1') ?: 0}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('0') ?: 0}]]*/ 0,
+                            /*[[${marketStats.neutralCount}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('1') ?: 0}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('3') ?: 0}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('5') ?: 0}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('10') ?: 0}]]*/ 0,
+                            /*[[${marketStats.changeRateDistribution?.get('10+') ?: 0}]]*/ 0
+                        ],
+                        backgroundColor: [
+                            '#1e40af', // -10% 이하 (진한 파랑)
+                            '#2563eb', // -10% ~ -5% (파랑)
+                            '#3b82f6', // -5% ~ -3% (연한 파랑)
+                            '#60a5fa', // -3% ~ -1% (더 연한 파랑)
+                            '#93c5fd', // -1% ~ 0% (매우 연한 파랑)
+                            '#6b7280', // 0% (회색)
+                            '#fca5a5', // 0% ~ 1% (매우 연한 빨강)
+                            '#f87171', // 1% ~ 3% (연한 빨강)
+                            '#ef4444', // 3% ~ 5% (빨강)
+                            '#dc2626', // 5% ~ 10% (진한 빨강)
+                            '#991b1b'  // 10% 이상 (매우 진한 빨강)
+                        ],
+                        borderColor: [
+                            '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd',
+                            '#6b7280', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#991b1b'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+    
+                new Chart(distributionCtx, {
+                    type: 'bar',
+                    data: changeRateData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: '종목 수'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: '등락률 구간'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.y + '개';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            </script>
+    </main>
+</body>
+</html>

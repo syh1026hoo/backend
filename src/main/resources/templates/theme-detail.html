@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title th:text="${theme + ' ETF'}">테마 ETF</title>
+</head>
+<body>
+    <main th:fragment="main">
+        <!-- 페이지 헤더 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">홈</a></li>
+                        <li class="breadcrumb-item"><a href="/themes">테마별 ETF</a></li>
+                        <li class="breadcrumb-item active" aria-current="page" th:text="${theme}">테마</li>
+                    </ol>
+                </nav>
+                
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h1 class="section-title mb-2">
+                            <i class="fas fa-tag me-2"></i>
+                            <span th:text="${theme}">테마</span> ETF
+                        </h1>
+                        <p class="text-muted">
+                            총 <span class="fw-bold text-primary" th:text="${etfCount}">0</span>개의 ETF가 있습니다
+                        </p>
+                    </div>
+                    <div>
+                        <button onclick="history.back()" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            뒤로가기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 필터 및 정렬 옵션 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-primary active" id="btn-all">
+                                        전체
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" id="btn-rising">
+                                        상승
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" id="btn-falling">
+                                        하락
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-neutral">
+                                        보합
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-primary active" id="sort-name">
+                                        이름순
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" id="sort-change">
+                                        등락률순
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" id="sort-volume">
+                                        거래량순
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ETF 목록 -->
+        <div class="row" id="etf-list">
+            <div th:if="${themeEtfs != null and !themeEtfs.empty}">
+                <div th:each="etf : ${themeEtfs}" 
+                     class="col-lg-6 col-xl-4 mb-4 etf-item"
+                     th:data-change-rate="${etf.fltRt}"
+                     th:data-volume="${etf.tradeVolume}"
+                     th:data-name="${etf.itmsNm}"
+                     th:data-direction="${etf.priceDirection}">
+                    <div class="card etf-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="card-title mb-0 flex-grow-1">
+                                    <a th:href="@{/etf/{isinCd}(isinCd=${etf.isinCd})}" 
+                                       class="text-decoration-none" th:text="${etf.itmsNm}">ETF명</a>
+                                </h6>
+                                <span class="badge ms-2" 
+                                      th:classappend="${etf.priceDirection == '상승'} ? 'bg-danger' : (${etf.priceDirection == '하락'} ? 'bg-primary' : 'bg-secondary')"
+                                      th:text="${etf.priceDirection}">상태</span>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <div class="text-muted small">현재가</div>
+                                        <div class="fw-bold" th:text="${#numbers.formatDecimal(etf.closePrice, 0, 'COMMA', 0, 'POINT')} + '원'">10,000원</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <div class="text-muted small">등락률</div>
+                                        <div class="fw-bold" 
+                                             th:data-flt-rt="${etf.fltRt}"
+                                             th:text="${etf.fltRt} + '%'">±0.00%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">종목코드</small>
+                                    <div class="fw-bold" th:text="${etf.srtnCd}">123456</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">NAV</small>
+                                    <div class="fw-bold" th:text="${#numbers.formatDecimal(etf.nav, 0, 'COMMA', 2, 'POINT')}">10,000.00</div>
+                                </div>
+                            </div>
+                            
+                            <div th:if="${etf.baseIndexName}" class="mb-3">
+                                <small class="text-muted">기초지수</small>
+                                <div class="small text-truncate" th:text="${etf.baseIndexName}" th:title="${etf.baseIndexName}">기초지수명</div>
+                            </div>
+                            
+                            <div class="row" th:if="${etf.tradeVolume != null and etf.tradeVolume > 0}">
+                                <div class="col-6">
+                                    <small class="text-muted">거래량</small>
+                                    <div class="small" th:text="${#numbers.formatDecimal(etf.tradeVolume, 0, 'COMMA', 0, 'POINT')}">0</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">거래대금</small>
+                                    <div class="small" th:text="${#numbers.formatDecimal(etf.tradePrice / 100000000, 1, 'COMMA', 1, 'POINT')} + '억'">0억</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a th:href="@{/etf/{isinCd}(isinCd=${etf.isinCd})}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-info-circle me-1"></i>
+                                상세보기
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div th:if="${themeEtfs == null or themeEtfs.empty}" class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">해당 테마의 ETF가 없습니다</h4>
+                    <p class="text-muted">다른 테마를 검색해보세요</p>
+                    <a href="/themes" class="btn btn-primary">
+                        <i class="fas fa-tags me-2"></i>
+                        다른 테마 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 관련 테마 추천 -->
+        <div class="row mt-4" th:if="${themeEtfs != null and !themeEtfs.empty}">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            관련 테마 더보기
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="/themes/KODEX" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    KODEX ETF
+                                </a>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="/themes/TIGER" class="btn btn-outline-warning w-100">
+                                    <i class="fas fa-chart-area me-2"></i>
+                                    TIGER ETF
+                                </a>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="/themes/반도체" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-microchip me-2"></i>
+                                    반도체 ETF
+                                </a>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="/search?keyword=AI" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-robot me-2"></i>
+                                    AI 관련 ETF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 필터링 및 정렬 스크립트 -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const etfItems = document.querySelectorAll('.etf-item');
+            
+            // 필터 버튼들
+            const btnAll = document.getElementById('btn-all');
+            const btnRising = document.getElementById('btn-rising');
+            const btnFalling = document.getElementById('btn-falling');
+            const btnNeutral = document.getElementById('btn-neutral');
+            
+            // 정렬 버튼들
+            const sortName = document.getElementById('sort-name');
+            const sortChange = document.getElementById('sort-change');
+            const sortVolume = document.getElementById('sort-volume');
+            
+            // 현재 필터와 정렬 상태
+            let currentFilter = 'all';
+            let currentSort = 'name';
+            
+            // 필터 이벤트
+            if (btnAll) btnAll.addEventListener('click', () => setFilter('all'));
+            if (btnRising) btnRising.addEventListener('click', () => setFilter('상승'));
+            if (btnFalling) btnFalling.addEventListener('click', () => setFilter('하락'));
+            if (btnNeutral) btnNeutral.addEventListener('click', () => setFilter('보합'));
+            
+            // 정렬 이벤트
+            if (sortName) sortName.addEventListener('click', () => setSort('name'));
+            if (sortChange) sortChange.addEventListener('click', () => setSort('change'));
+            if (sortVolume) sortVolume.addEventListener('click', () => setSort('volume'));
+            
+            function setFilter(filter) {
+                currentFilter = filter;
+                updateFilterButtons();
+                applyFilterAndSort();
+            }
+            
+            function setSort(sort) {
+                currentSort = sort;
+                updateSortButtons();
+                applyFilterAndSort();
+            }
+            
+            function updateFilterButtons() {
+                [btnAll, btnRising, btnFalling, btnNeutral].forEach(btn => {
+                    if (btn) btn.classList.remove('active');
+                });
+                
+                switch(currentFilter) {
+                    case 'all': if (btnAll) btnAll.classList.add('active'); break;
+                    case '상승': if (btnRising) btnRising.classList.add('active'); break;
+                    case '하락': if (btnFalling) btnFalling.classList.add('active'); break;
+                    case '보합': if (btnNeutral) btnNeutral.classList.add('active'); break;
+                }
+            }
+            
+            function updateSortButtons() {
+                [sortName, sortChange, sortVolume].forEach(btn => {
+                    if (btn) btn.classList.remove('active');
+                });
+                
+                switch(currentSort) {
+                    case 'name': if (sortName) sortName.classList.add('active'); break;
+                    case 'change': if (sortChange) sortChange.classList.add('active'); break;
+                    case 'volume': if (sortVolume) sortVolume.classList.add('active'); break;
+                }
+            }
+            
+            function applyFilterAndSort() {
+                const container = document.getElementById('etf-list');
+                if (!container) return;
+                
+                // 필터링
+                let visibleItems = Array.from(etfItems).filter(item => {
+                    if (currentFilter === 'all') return true;
+                    return item.dataset.direction === currentFilter;
+                });
+                
+                // 정렬
+                visibleItems.sort((a, b) => {
+                    switch(currentSort) {
+                        case 'name':
+                            return a.dataset.name.localeCompare(b.dataset.name);
+                        case 'change':
+                            return parseFloat(b.dataset.changeRate) - parseFloat(a.dataset.changeRate);
+                        case 'volume':
+                            return parseInt(b.dataset.volume || '0') - parseInt(a.dataset.volume || '0');
+                        default:
+                            return 0;
+                    }
+                });
+                
+                // 모든 아이템 숨기기
+                etfItems.forEach(item => item.style.display = 'none');
+                
+                // 정렬된 아이템들을 다시 표시
+                visibleItems.forEach(item => {
+                    item.style.display = 'block';
+                    container.appendChild(item);
+                });
+            }
+        });
+        </script>
+    </main>
+</body>
+</html>

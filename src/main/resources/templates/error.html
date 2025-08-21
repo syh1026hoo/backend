@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>오류</title>
+</head>
+<body>
+    <main th:fragment="main">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-5x text-warning mb-4"></i>
+                    <h1 class="display-4 mb-3">오류가 발생했습니다</h1>
+                    <p class="lead text-muted mb-4" th:text="${error ?: '예상치 못한 오류가 발생했습니다.'}">
+                        예상치 못한 오류가 발생했습니다.
+                    </p>
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="/" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>
+                            홈으로 돌아가기
+                        </a>
+                        <button onclick="history.back()" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            이전 페이지
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
